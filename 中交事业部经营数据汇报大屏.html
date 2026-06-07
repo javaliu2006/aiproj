@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中交事业部2026年度经营数据汇报大屏</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background-color: #2c5282;
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .header-info {
+            text-align: right;
+        }
+        
+        .dept-name {
+            font-size: 1.2rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .report-time {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        /* 主容器样式 */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto auto auto;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 100vw;
+            height: calc(100vh - 100px);
+        }
+        
+        /* 卡片通用样式 */
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c5282;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* 核心数据看板样式 */
+        .kpi-board {
+            grid-column: 1 / 4;
+            grid-row: 1 / 2;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+        }
+        
+        .kpi-card {
+            background-color: white;
+            border-radius: 6px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .kpi-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c5282;
+            margin-bottom: 0.3rem;
+        }
+        
+        .kpi-rate {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .rate-up {
+            color: #2ecc71;
+        }
+        
+        .rate-down {
+            color: #e74c3c;
+        }
+        
+        .rate-normal {
+            color: #3498db;
+        }
+        
+        /* 图表容器样式 */
+        .chart-container {
+            height: 100%;
+            min-height: 250px;
+        }
+        
+        .chart-card-1 {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+        }
+        
+        .chart-card-2 {
+            grid-column: 2 / 4;
+            grid-row: 2 / 3;
+        }
+        
+        .chart-card-3 {
+            grid-column: 1 / 4;
+            grid-row: 3 / 4;
+        }
+        
+        /* 核心总结样式 */
+        .summary-card {
+            grid-column: 1 / 4;
+            grid-row: 4 / 5;
+        }
+        
+        .summary-list {
+            list-style-type: none;
+            padding: 0.5rem 0;
+        }
+        
+        .summary-item {
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+            line-height: 1.5;
+        }
+        
+        .summary-item:before {
+            content: "●";
+            color: #2c5282;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        /* 表格样式 */
+        .table-card {
+            grid-column: 1 / 4;
+            grid-row: 5 / 6;
+            overflow-x: auto;
+        }
+        
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+        
+        .summary-table th,
+        .summary-table td {
+            padding: 0.8rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .summary-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c5282;
+        }
+        
+        .summary-table tr:hover {
+            background-color: #fafbfc;
+        }
+        
+        .total-row {
+            background-color: #f0f5ff !important;
+            font-weight: 600;
+        }
+        
+        .cell-up {
+            color: #2ecc71;
+        }
+        
+        .cell-down {
+            color: #e74c3c;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 1440px) {
+            .kpi-board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .chart-card-1, .chart-card-2 {
+                grid-column: 1 / 3;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kpi-board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .chart-card-1, .chart-card-2, .chart-card-3,
+            .summary-card, .table-card, .kpi-board {
+                grid-column: 1 / 2;
+            }
+            
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .header-info {
+                text-align: center;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部区域 -->
+    <div class="header">
+        <div class="header-title">中交事业部2026年度经营数据汇报</div>
+        <div class="header-info">
+            <div class="dept-name">中交事业部</div>
+            <div class="report-time" id="current-time"></div>
+        </div>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="container">
+        <!-- 核心数据看板 -->
+        <div class="kpi-board card">
+            <div class="kpi-card">
+                <div class="kpi-label">年度回款目标</div>
+                <div class="kpi-value" id="annual-target">0</div>
+                <div class="kpi-rate normal">目标值</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">已回款金额</div>
+                <div class="kpi-value" id="actual-amount">0</div>
+                <div class="kpi-rate normal">实际值</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">回款完成率</div>
+                <div class="kpi-value" id="payment-rate">0%</div>
+                <div class="kpi-rate rate-down" id="payment-status">需加强</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">H1开票完成率</div>
+                <div class="kpi-value" id="h1-invoice-rate">0%</div>
+                <div class="kpi-rate rate-down" id="invoice-status">需加强</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">H1回款完成率</div>
+                <div class="kpi-value" id="h1-payment-rate">0%</div>
+                <div class="kpi-rate rate-down" id="h1-status">需加强</div>
+            </div>
+        </div>
+        
+        <!-- 图表1：各部门回款完成率对比 -->
+        <div class="card chart-card-1">
+            <div class="card-header">各部门回款完成率对比</div>
+            <div class="chart-container">
+                <canvas id="dept-rate-chart"></canvas>
+            </div>
+        </div>
+        
+        <!-- 图表2：目标vs实际对比 -->
+        <div class="card chart-card-2">
+            <div class="card-header">年度目标vs实际完成情况</div>
+            <div class="chart-container">
+                <canvas id="target-actual-chart"></canvas>
+            </div>
+        </div>
+        
+        <!-- 图表3：H1各部门详细数据对比 -->
+        <div class="card chart-card-3">
+            <div class="card-header">H1各部门开票与回款情况对比</div>
+            <div class="chart-container">
+                <canvas id="h1-detail-chart"></canvas>
+            </div>
+        </div>
+        
+        <!-- 核心总结 -->
+        <div class="card summary-card">
+            <div class="card-header">核心汇报结论</div>
+            <ul class="summary-list">
+                <li class="summary-item" id="summary-1">整体回款完成率20.7%，低于预期目标，需要各部门加强回款力度。</li>
+                <li class="summary-item" id="summary-2">研发中心表现突出，回款完成率达72.5%，可作为标杆供其他部门学习。</li>
+                <li class="summary-item" id="summary-3">H1开票完成率27.0%，回款完成率40.5%，下半年需重点推进项目落地和款项回收。</li>
+            </ul>
+        </div>
+        
+        <!-- 极简汇总表 -->
+        <div class="card table-card">
+            <div class="card-header">2026年度经营数据核心汇总</div>
+            <table class="summary-table" id="summary-table">
+                <thead>
+                    <tr>
+                        <th>部门</th>
+                        <th>年度回款目标(元)</th>
+                        <th>已回款金额(元)</th>
+                        <th>回款完成率</th>
+                        <th>H1开票完成率</th>
+                        <th>H1回款完成率</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 表格数据将通过JS动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 格式化数字显示（千分位分隔符）
+        function formatNumber(num) {
+            if (num === 0 || !num) return '0';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // 格式化百分比显示
+        function formatRate(rate) {
+            if (isNaN(rate)) return '0.0%';
+            return rate.toFixed(1) + '%';
+        }
+        
+        // 更新当前时间
+        function updateCurrentTime() {
+            const now = moment();
+            const timeStr = now.format('YYYY年MM月DD日 HH:mm:ss');
+            document.getElementById('current-time').textContent = timeStr;
+        }
+        
+        // 经营数据（从JSON文件获取）
+        let businessData = [];
+        
+        // 加载数据并初始化页面
+        async function initPage() {
+            try {
+                // 这里假设数据已经内联到页面中（实际使用时可通过fetch获取）
+                // 由于是纯HTML文件，我们将数据直接内联
+                businessData = [{"空列": NaN, "部门": "产业数字（7人）", "2026年度回款目标": 2700052.02, "2026年已支付金额": 515499.0, "26年H1目标金额": 1991385.3, "H1计划开票": 1158999.99, "H1开票达成": 1337500.0, "H1回款达成": 515499.0, "H1回款偏差": 1475886.3, "26年H2目标金额": 708666.72, "H2计划开票": 0.0, "H2开票达成": 329612.67, "空列2": "客户申报资金计划60万（包含梁场），实际通过10万，财务卡支付，请干乐找财务进行沟通，如果不支付的，下一步考虑释放人员。", "2026年度开票目标": 1680000.0, "2026年度回款目标2": 420000.0, "2026上半年实际开票": 1991385.3, "2026上半年实际回款": 708666.72, "目前进展": "0529：还有一笔10w的现金支付，要下周才能到账了。\n0515：已开票17.85万。\n4月沟通回款28万，已到账38万，告知下月预计回款31w\n产业数字化，3月份只有8万的付款计划。\n计量116w", "5月资金计划（万）": 10.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 19.1, "H1开票完成率": 67.2, "H1回款完成率": 25.9}, {"空列": NaN, "部门": "智慧梁场（5人）", "2026年度回款目标": 1900000.0, "2026年已支付金额": 150000.0, "26年H1目标金额": 760000.0, "H1计划开票": 1100000.0, "H1开票达成": 400604.57, "H1回款达成": 150000.0, "H1回款偏差": 610000.0, "26年H2目标金额": 1140000.0, "H2计划开票": 0.0, "H2开票达成": 594687.59, "空列2": "客户申报资金计划60万（包含梁场），实际通过15万，", "2026年度开票目标": 1200000.0, "2026年度回款目标2": 0.0, "2026上半年实际开票": 760000.0, "2026上半年实际回款": 1140000.0, "目前进展": "0602：24年7-8月的6月可以计量50万。\n0528：已回款15万。\n0515：已开票40万。\n梁场目前已提交计量材料合计110万，客户通知开票40万，剩余70万下月开出，回款目前还是卡在付款计划未通过\n梁场回款要下月通过（优先完成80万计量），\n朱总部门程力利回复我们上半年可以计量80万（24年7-9月产出费用）计划4月开票80万，\n部门负责人未联系上，还在国外。", "5月资金计划（万）": 15.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 7.9, "H1开票完成率": 52.7, "H1回款完成率": 19.7}, {"空列": NaN, "部门": "科技技术部（4人）", "2026年度回款目标": 1804329.09, "2026年已支付金额": 492411.0, "26年H1目标金额": 1000000.0, "H1计划开票": 550000.0, "H1开票达成": 0.0, "H1回款达成": 492411.0, "H1回款偏差": 507589.0, "26年H2目标金额": 804329.09, "H2计划开票": 0.0, "H2开票达成": 0.0, "空列2": "客户报资金计划50万，财务只通过15万。财务卡支付，请干乐找财务进行沟通，如果不支付的，下一步考虑释放人员", "2026年度开票目标": 960000.0, "2026年度回款目标2": 480000.0, "2026上半年实际开票": 1000000.0, "2026上半年实际回款": 804329.09, "目前进展": "0529：客户在群里说了他如果批了的话，那今天下午有可能会收到。如果没收到的话，那就下周，\n客户已报4-5月付款计划，被财务驳回，优先支付其他部分费用。目前要等6月份才能继续申请。已找干乐一起找生产经营部沟通，先支付一部分，目前客户再次发5月资金计划审批，待出结果\n计划4月开票50万，技术中心50万回款，因财务优先了其他业务部门的付款，导致付款被打回，目前计划从产业数字回款20万，管理信息回款14万。\n目前科技部和研发中心合并到一个大部门，预计每个月是50万的费用，目前客户按正常50万的费用上报资金计划，3月可以完成50万计量", "5月资金计划（万）": 15.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 27.3, "H1开票完成率": 0.0, "H1回款完成率": 49.2}, {"空列": NaN, "部门": "研发中心（4人）", "2026年度回款目标": 827205.9, "2026年已支付金额": 600000.0, "26年H1目标金额": 500000.0, "H1计划开票": 170000.0, "H1开票达成": 0.0, "H1回款达成": 600000.0, "H1回款偏差": -100000.0, "26年H2目标金额": 327205.9, "H2计划开票": 0.0, "H2开票达成": 176672.73, "空列2": "上半年目标已达成", "2026年度开票目标": 960000.0, "2026年度回款目标2": 480000.0, "2026上半年实际开票": 500000.0, "2026上半年实际回款": 327205.9, "目前进展": "4月目前剩余50万，人员已释放。客户4-5月付款计划被财务驳回，优先支付其他部分费用。目前要等6月份才能继续申请。已找干乐一起找生产经营部沟通，先支付一部分，目前暂未收到答复。\n3月27日到账60万\n3月份完成50万的回款，", "5月资金计划（万）": 0.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 72.5, "H1开票完成率": 0.0, "H1回款完成率": 120.0}, {"空列": NaN, "部门": "管理咨询（3人）", "2026年度回款目标": 745869.35, "2026年已支付金额": 72142.28, "26年H1目标金额": 499104.53, "H1计划开票": 127000.0, "H1开票达成": 0.0, "H1回款达成": 72142.28, "H1回款偏差": 426962.25, "26年H2目标金额": 246764.817, "H2计划开票": 0.0, "H2开票达成": 0.0, "空列2": "客户已报资金计划12.7万，财务未批，需要6月份再申报", "2026年度开票目标": 720000.0, "2026年度回款目标2": 360000.0, "2026上半年实际开票": 499104.53, "2026上半年实际回款": 246764.82, "目前进展": "0423：要重新续签合同，合同金额不签只剩20万，包不住。前提等框架合同签完后才能进行续签。\n预计要4月份计量", "5月资金计划（万）": 0.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 9.7, "H1开票完成率": 0.0, "H1回款完成率": 14.5}, {"空列": NaN, "部门": "管理信息化（1人）", "2026年度回款目标": 807090.83, "2026年已支付金额": 263627.0, "26年H1目标金额": 348874.85, "H1计划开票": 227464.49, "H1开票达成": 157464.49, "H1回款达成": 263627.0, "H1回款偏差": 85247.85, "26年H2目标金额": 458215.98, "H2计划开票": 0.0, "H2开票达成": 507045.0, "空列2": "本月已报资金计划6.9万，暂无风险", "2026年度开票目标": 240000.0, "2026年度回款目标2": 120000.0, "2026上半年实际开票": 348874.85, "2026上半年实际回款": 458215.98, "目前进展": "4月已回款14.9万，目前缺合同，下一步需要续签合同。等框架合同完成。\n4月沟通回款14万\n2月份已回款11.4万，目前还有一笔未计量的预计4月份计量", "5月资金计划（万）": 6.9, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 32.7, "H1开票完成率": 45.1, "H1回款完成率": 75.6}, {"空列": NaN, "部门": "智慧工地（2人）", "2026年度回款目标": 426279.26, "2026年已支付金额": 89322.0, "26年H1目标金额": 173194.76, "H1计划开票": 404022.73, "H1开票达成": 94022.73, "H1回款达成": 89322.0, "H1回款偏差": 83872.76, "26年H2目标金额": 253084.4971, "H2计划开票": 0.0, "H2开票达成": 108045.27, "空列2": "资金计划还未报下来", "2026年度开票目标": 480000.0, "2026年度回款目标2": 240000.0, "2026上半年实际开票": 173194.76, "2026上半年实际回款": 253084.5, "目前进展": "目前计量材料已提交给客户，等客户通知开票，目前已分别计量到25年9月 和25年12月。\n3月份预计可计量19.37万\n4月份可计量6.2万", "5月资金计划（万）": 0.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 21.0, "H1开票完成率": 54.3, "H1回款完成率": 51.6}, {"空列": NaN, "部门": "振华项目", "2026年度回款目标": 294852.28, "2026年已支付金额": 0.0, "26年H1目标金额": 294852.28, "H1计划开票": 0.0, "H1开票达成": 0.0, "H1回款达成": 0.0, "H1回款偏差": 294852.28, "26年H2目标金额": 0.0, "H2计划开票": 0.0, "H2开票达成": 0.0, "空列2": NaN, "2026年度开票目标": 0.0, "2026年度回款目标2": 0.0, "2026上半年实际开票": 294852.28, "2026上半年实际回款": 0.0, "目前进展": NaN, "5月资金计划（万）": 0.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 0.0, "H1开票完成率": 0.0, "H1回款完成率": 0.0}, {"空列": NaN, "部门": "中交心斌", "2026年度回款目标": 4900000.0, "2026年已支付金额": 799788.0, "26年H1目标金额": 1800000.0, "H1计划开票": 1000000.0, "H1开票达成": 0.0, "H1回款达成": 799788.0, "H1回款偏差": 1000212.0, "26年H2目标金额": 3100000.0, "H2计划开票": 0.0, "H2开票达成": 3700000.0, "空列2": "本月客户已报资金计划，财务卡死了部门限额", "2026年度开票目标": 0.0, "2026年度回款目标2": 0.0, "2026上半年实际开票": 0.0, "2026上半年实际回款": 0.0, "目前进展": "5月开票：49万", "5月资金计划（万）": 0.0, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 16.3, "H1开票完成率": 0.0, "H1回款完成率": 44.4}, {"空列": NaN, "部门": "总计", "2026年度回款目标": 14405678.73, "2026年已支付金额": 2982789.2800000003, "26年H1目标金额": 7367411.72, "H1计划开票": 4737487.21, "H1开票达成": 1989591.79, "H1回款达成": 2982789.2800000003, "H1回款偏差": NaN, "26年H2目标金额": NaN, "H2计划开票": NaN, "H2开票达成": NaN, "空列2": NaN, "2026年度开票目标": NaN, "2026年度回款目标2": NaN, "2026上半年实际开票": NaN, "2026上半年实际回款": NaN, "目前进展": "各部门进展详见具体数据", "5月资金计划（万）": NaN, "6月资金计划（万）": NaN, "7月资金计划（万）": NaN, "8月资金计划（万）": NaN, "9月资金计划（万）": NaN, "10月资金计划（万）": NaN, "11月资金计划（万）": NaN, "12月资金计划（万）": NaN, "回款完成率": 20.7, "H1开票完成率": 27.0, "H1回款完成率": 40.5}];
+                
+                // 确保数据是数组格式
+                if (typeof businessData === 'string') {
+                    businessData = JSON.parse(businessData);
+                }
+                
+                // 获取总计数据
+                const totalData = businessData.find(item => item.部门 === '总计');
+                
+                if (totalData) {
+                    // 更新核心KPI数据
+                    document.getElementById('annual-target').textContent = '¥' + formatNumber(Math.round(totalData['2026年度回款目标']));
+                    document.getElementById('actual-amount').textContent = '¥' + formatNumber(Math.round(totalData['2026年已支付金额']));
+                    document.getElementById('payment-rate').textContent = formatRate(totalData['回款完成率']);
+                    document.getElementById('h1-invoice-rate').textContent = formatRate(totalData['H1开票完成率']);
+                    document.getElementById('h1-payment-rate').textContent = formatRate(totalData['H1回款完成率']);
+                    
+                    // 设置完成率状态颜色
+                    setRateStatus('payment-status', totalData['回款完成率']);
+                    setRateStatus('invoice-status', totalData['H1开票完成率']);
+                    setRateStatus('h1-status', totalData['H1回款完成率']);
+                }
+                
+                // 生成表格数据（排除总计行，最后单独添加）
+                generateTableData();
+                
+                // 初始化图表
+                initCharts();
+                
+                // 更新时间
+                updateCurrentTime();
+                setInterval(updateCurrentTime, 1000);
+                
+            } catch (error) {
+                console.error('数据加载失败:', error);
+                alert('经营数据加载失败，请刷新页面重试');
+            }
+        }
+        
+        // 设置完成率状态（颜色和文字）
+        function setRateStatus(elementId, rate) {
+            const element = document.getElementById(elementId);
+            if (rate >= 80) {
+                element.className = 'kpi-rate rate-up';
+                element.textContent = '优秀';
+            } else if (rate >= 50) {
+                element.className = 'kpi-rate rate-normal';
+                element.textContent = '良好';
+            } else {
+                element.className = 'kpi-rate rate-down';
+                element.textContent = '需加强';
+            }
+        }
+        
+        // 生成表格数据
+        function generateTableData() {
+            const tableBody = document.querySelector('#summary-table tbody');
+            tableBody.innerHTML = '';
+            
+            // 过滤掉总计行，先添加各部门数据
+            const deptData = businessData.filter(item => item.部门 !== '总计');
+            
+            deptData.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // 部门名称
+                const deptCell = document.createElement('td');
+                deptCell.textContent = item.部门;
+                row.appendChild(deptCell);
+                
+                // 年度回款目标
+                const targetCell = document.createElement('td');
+                targetCell.textContent = '¥' + formatNumber(Math.round(item['2026年度回款目标']));
+                row.appendChild(targetCell);
+                
+                // 已回款金额
+                const actualCell = document.createElement('td');
+                actualCell.textContent = '¥' + formatNumber(Math.round(item['2026年已支付金额']));
+                row.appendChild(actualCell);
+                
+                // 回款完成率
+                const paymentRateCell = document.createElement('td');
+                const paymentRate = item['回款完成率'];
+                paymentRateCell.textContent = formatRate(paymentRate);
+                setCellClass(paymentRateCell, paymentRate);
+                row.appendChild(paymentRateCell);
+                
+                // H1开票完成率
+                const invoiceRateCell = document.createElement('td');
+                const invoiceRate = item['H1开票完成率'];
+                invoiceRateCell.textContent = formatRate(invoiceRate);
+                setCellClass(invoiceRateCell, invoiceRate);
+                row.appendChild(invoiceRateCell);
+                
+                // H1回款完成率
+                const h1RateCell = document.createElement('td');
+                const h1Rate = item['H1回款完成率'];
+                h1RateCell.textContent = formatRate(h1Rate);
+                setCellClass(h1RateCell, h1Rate);
+                row.appendChild(h1RateCell);
+                
+                tableBody.appendChild(row);
+            });
+            
+            // 添加总计行
+            const totalData = businessData.find(item => item.部门 === '总计');
+            if (totalData) {
+                const totalRow = document.createElement('tr');
+                totalRow.className = 'total-row';
+                
+                const cells = [
+                    '总计',
+                    '¥' + formatNumber(Math.round(totalData['2026年度回款目标'])),
+                    '¥' + formatNumber(Math.round(totalData['2026年已支付金额'])),
+                    formatRate(totalData['回款完成率']),
+                    formatRate(totalData['H1开票完成率']),
+                    formatRate(totalData['H1回款完成率'])
+                ];
+                
+                cells.forEach((text, index) => {
+                    const cell = document.createElement('td');
+                    cell.textContent = text;
+                    // 为完成率列设置颜色
+                    if (index >= 3) {
+                        const rate = index === 3 ? totalData['回款完成率'] : 
+                                   index === 4 ? totalData['H1开票完成率'] : totalData['H1回款完成率'];
+                        setCellClass(cell, rate);
+                    }
+                    totalRow.appendChild(cell);
+                });
+                
+                tableBody.appendChild(totalRow);
+            }
+        }
+        
+        // 设置表格单元格颜色
+        function setCellClass(cell, rate) {
+            if (rate >= 80) {
+                cell.className = 'cell-up';
+            } else if (rate >= 50) {
+                cell.className = 'cell-normal';
+            } else {
+                cell.className = 'cell-down';
+            }
+        }
+        
+        // 初始化所有图表
+        function initCharts() {
+            // 过滤掉总计行，只保留部门数据
+            const deptData = businessData.filter(item => item.部门 !== '总计');
+            const deptNames = deptData.map(item => item.部门.replace(/（.*?）/, '')); // 简化部门名称
+            
+            // 图表1：各部门回款完成率对比（横向柱状图）
+            const rateCtx = document.getElementById('dept-rate-chart').getContext('2d');
+            new Chart(rateCtx, {
+                type: 'bar',
+                data: {
+                    labels: deptNames,
+                    datasets: [{
+                        label: '回款完成率(%)',
+                        data: deptData.map(item => item['回款完成率']),
+                        backgroundColor: deptData.map(item => {
+                            const rate = item['回款完成率'];
+                            return rate >= 80 ? 'rgba(46, 204, 113, 0.7)' : 
+                                   rate >= 50 ? 'rgba(52, 152, 219, 0.7)' : 'rgba(231, 76, 60, 0.7)';
+                        }),
+                        borderColor: deptData.map(item => {
+                            const rate = item['回款完成率'];
+                            return rate >= 80 ? 'rgba(46, 204, 113, 1)' : 
+                                   rate >= 50 ? 'rgba(52, 152, 219, 1)' : 'rgba(231, 76, 60, 1)';
+                        }),
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `完成率: ${context.raw.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '完成率(%)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 图表2：年度目标vs实际对比（分组柱状图）
+            const targetCtx = document.getElementById('target-actual-chart').getContext('2d');
+            new Chart(targetCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['年度回款', 'H1目标'],
+                    datasets: [
+                        {
+                            label: '目标金额(万元)',
+                            data: [
+                                Math.round(businessData.find(item => item.部门 === '总计')['2026年度回款目标'] / 10000),
+                                Math.round(businessData.find(item => item.部门 === '总计')['26年H1目标金额'] / 10000)
+                            ],
+                            backgroundColor: 'rgba(41, 128, 185, 0.7)',
+                            borderColor: 'rgba(41, 128, 185, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '实际完成(万元)',
+                            data: [
+                                Math.round(businessData.find(item => item.部门 === '总计')['2026年已支付金额'] / 10000),
+                                Math.round(businessData.find(item => item.部门 === '总计')['H1回款达成'] / 10000)
+                            ],
+                            backgroundColor: 'rgba(230, 126, 34, 0.7)',
+                            borderColor: 'rgba(230, 126, 34, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw} 万元`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '金额(万元)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 图表3：H1各部门开票与回款情况对比（堆叠柱状图）
+            const h1Ctx = document.getElementById('h1-detail-chart').getContext('2d');
+            new Chart(h1Ctx, {
+                type: 'bar',
+                data: {
+                    labels: deptNames,
+                    datasets: [
+                        {
+                            label: 'H1开票达成(万元)',
+                            data: deptData.map(item => Math.round(item['H1开票达成'] / 10000)),
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'H1回款达成(万元)',
+                            data: deptData.map(item => Math.round(item['H1回款达成'] / 10000)),
+                            backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw} 万元`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '金额(万元)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 页面加载完成后初始化
+        window.onload = initPage;
+    </script>
+</body>
+</html>
